@@ -1,0 +1,87 @@
+---
+name: Arduino CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        board:
+          - {fqbn: "arduino:avr:uno", path: "arduino.avr.uno", name: "arduino_uno"}
+          - {fqbn: "arduino:renesas_uno:minima", path: "arduino.renesas_uno.minima", name: "arduino_uno_r4_minima"}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: |
+          mkdir -p $HOME/.local/bin
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "git_hash=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
+          echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+          echo "Building firmware with version: ${{ env.version }} and git hash: ${{ env.git_hash }}"
+
+      - name: Compile
+        uses: arduino/compile-sketches@v1
+        with:
+          fqbn: ${{ matrix.board.fqbn }}
+          sketch-paths: |
+            - ./firmware/
+          libraries: |
+            - name: ArduinoJson
+              version: 6.21.4
+          cli-compile-flags: |
+            - --export-binaries
+            - --build-property 
+            - build.extra_flags="-DVERSION=${{ env.version }} -DGIT_HASH=${{ env.git_hash }}"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.board.name }}
+          path: ./firmware/build/${{ matrix.board.path }}/
+          if-no-files-found: error
+
+  test:
+    runs-on: self-hosted
+    needs: build
+
+    strategy:
+      matrix:
+        board:
+          - {fqbn: "arduino:avr:uno", name: "arduino_uno"}
+          - {fqbn: "arduino:renesas_uno:minima", name: "arduino_uno_r4_minima"}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-${{ matrix.board.name }}
+          path: ${{ github.workspace }}/build
+
+      - name: Find Board Port
+        id: find-port
+        run: |
+          python3 scripts/find_board_port.py ${{ matrix.board.fqbn }}
+
+      - name: Set Board Port
+        run: |
+          echo "PORT=$(python scripts/find_board_port.py ${{ matrix.board.fqbn }})" >> $GITHUB_ENV
+
+      - name: Upload Sketch
+        run: |
+          arduino-cli upload -p ${PORT} --fqbn ${{ matrix.board.fqbn }} --input-dir ${{ github.workspace }}/build/ --verify --verbose
+
+      - name: Test Sketch
+        run: |
+          python3 tests/test_arduino.py --port ${PORT}
