@@ -22,7 +22,7 @@ def get_git_hash(short=True):
 
     try:
         # Command to get the Git hash
-        cmd = ['git', 'rev-parse', '--short' if short else 'HEAD']
+        cmd = ['git', 'rev-parse', '--short', 'HEAD']
         
         # Execute the command and get the output
         git_hash = subprocess.check_output(cmd).decode('utf-8').strip()

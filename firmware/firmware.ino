@@ -5,8 +5,13 @@
 #include <ArduinoJson.h>
 
 // Git version hash (replace with actual hash during build process)
+#ifndef VERSION
 #define VERSION "0.0.0"
+#endif
+
+#ifndef GIT_HASH
 #define GIT_HASH "00000000"
+#endif
 
 // Define the LED pin and state
 const int ledPin = 13;  // Pin connected to the onboard LED

@@ -2,14 +2,14 @@
 
 # Copyright © 2024 Bitcrush Testing
 
-VERSION=$(git describe --tags --abbrev=0)
+VERSION="\"$(git describe --tags --abbrev=0)\""
 
 if [ -z "$VERSION" ]; then
   echo "Error: VERSION is empty"
   exit 1
 fi
 
-GIT_HASH=$(git rev-parse --short HEAD)
+GIT_HASH="\"$(git rev-parse --short HEAD)\""
 BOARDS=("arduino:avr:uno" "arduino:renesas_uno:minima")
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
