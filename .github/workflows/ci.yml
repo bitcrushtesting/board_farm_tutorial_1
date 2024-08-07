@@ -19,19 +19,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      
       - name: Prepare environment
         run: |
           mkdir -p $HOME/.local/bin
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          echo "git_hash=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
-          echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
-          echo "Building firmware with version: ${{ env.version }} and git hash: ${{ env.git_hash }}"
+          GIT_HASH="\"$(git rev-parse --short $GITHUB_SHA)\""
+          echo "Git hash: $GIT_HASH"
+          echo "git_hash=$GIT_HASH" >> $GITHUB_ENV
+          VERSION="\"$(git describe --tags --abbrev=0)\""
+          echo "Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_ENV
 
       - name: Compile
         uses: arduino/compile-sketches@v1
         with:
           fqbn: ${{ matrix.board.fqbn }}
+          verbose: true
           sketch-paths: |
             - ./firmware/
           libraries: |
@@ -40,7 +47,7 @@ jobs:
           cli-compile-flags: |
             - --export-binaries
             - --build-property 
-            - build.extra_flags="-DVERSION=${{ env.version }} -DGIT_HASH=${{ env.git_hash }}"
+            - build.extra_flags="-DVERSION=${{ env.version }}" "-DGIT_HASH=${{ env.git_hash }}"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -62,6 +69,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4

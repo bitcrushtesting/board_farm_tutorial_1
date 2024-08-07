@@ -17,7 +17,8 @@ check_raspberry_pi() {
 prompt_for_input() {
     local prompt_message="$1"
     local input_variable_name="$2"
-    read -p "$prompt_message: " $input_variable_name
+    # shellcheck disable=SC2229
+    read -rp "$prompt_message: " "$input_variable_name"
 }
 
 # Function to check if arduino-cli is installed
@@ -43,10 +44,10 @@ install_github_runner() {
     echo "Installing GitHub runner..."
     RUNNER_DIR=${HOME}/actions-runner
 
-    if [ -d ${RUNNER_DIR} ] 
+    if [ -d "${RUNNER_DIR}" ] 
     then
         echo "GitHub runner is already installed."
-        read -p "Do you want to overwrite it? (yes/no) " yn
+        read -rp "Do you want to overwrite it? (yes/no) " yn
 
         case $yn in 
 	        yes ) echo "Ok, proceeding";;
@@ -56,8 +57,8 @@ install_github_runner() {
 		        return;;
         esac
     fi 
-    rm -rf ${RUNNER_DIR}
-    mkdir -p ${RUNNER_DIR} && cd ${RUNNER_DIR}
+    rm -rf "${RUNNER_DIR}"
+    mkdir -p "${RUNNER_DIR}" && cd "${RUNNER_DIR}"
     echo "Install folder: ${RUNNER_DIR}"
     curl -o actions-runner-linux-arm64-2.317.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.317.0/actions-runner-linux-arm64-2.317.0.tar.gz
     echo "7e8e2095d2c30bbaa3d2ef03505622b883d9cb985add6596dbe2f234ece308f3  actions-runner-linux-arm64-2.317.0.tar.gz" | shasum -a 256 -c
@@ -74,7 +75,7 @@ install_github_runner() {
   
     # Create the systemd service file
     SERVICE_FILE="/etc/systemd/system/github-runner.service"
-    sudo rm -f ${SERVICE_FILE}
+    sudo rm -f "${SERVICE_FILE}"
     sudo bash -c "cat > $SERVICE_FILE" <<EOL
 [Unit]
 Description=GitHub Actions Runner
@@ -119,9 +120,9 @@ install_python() {
 
 # Main script execution
 set -e
-user_id=`id -u`
+USER_ID=$(id -u)
 
-if [ $user_id -eq 0 -a -z "$RUNNER_ALLOW_RUNASROOT" ]; then
+if [[ "$USER_ID" -eq 0 ]] && [[ -z "$RUNNER_ALLOW_RUNASROOT" ]]; then
     echo "Must not run with sudo"
     exit 1
 fi
